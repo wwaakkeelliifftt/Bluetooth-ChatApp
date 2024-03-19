@@ -102,6 +102,8 @@ class BluetoothViewModel @Inject constructor(
                     )
                 }
             }
+
+            is ConnectionResult.TransferSucceeded -> TODO()
         }
     }
         .catch { throwable ->
