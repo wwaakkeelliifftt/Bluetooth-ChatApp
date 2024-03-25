@@ -191,6 +191,7 @@ class AndroidBluetoothController(
             isFromLocalUser = true
         )
         dataTransferService?.sendMessage(bluetoothMessage.toByteArray())
+
         return bluetoothMessage
     }
 
