@@ -94,9 +94,9 @@ class AndroidBluetoothController(
     }
 
     override fun startDiscovery() {
-//        if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
-//            return
-//        }
+        if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
+            return
+        }
         context.registerReceiver(
             foundDeviceReceiver,
             IntentFilter(BluetoothDevice.ACTION_FOUND)
@@ -157,10 +157,6 @@ class AndroidBluetoothController(
         if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
             throw SecurityException("No BLUETOOTH_CONNECT permission")
         }
-
-//        val bluetoothDevice = bluetoothAdapter?.getRemoteDevice(device.macAddress)
-//        currentClientSocket = bluetoothDevice
-//            ?.createRfcommSocketToServiceRecord(UUID.fromString(BT_SERVICE_UUID))
 
         currentClientSocket = bluetoothAdapter
             ?.getRemoteDevice(device.macAddress)

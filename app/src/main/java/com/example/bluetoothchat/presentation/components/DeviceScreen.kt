@@ -1,5 +1,6 @@
 package com.example.bluetoothchat.presentation.components
 
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,6 +77,15 @@ fun BluetoothDeviceList(
                 fontSize = 24.sp,
                 modifier = Modifier.padding(16.dp)
             )
+        }
+        val oldBluetoothApi = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
+        if (pairedDevices.isEmpty() && oldBluetoothApi) {
+            item { Text(
+                text = "Check that GPS is enabled. That's need for scanning new devices",
+                fontWeight = FontWeight.Light,
+                color = Color(0xFFC21C1C),
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) }
         }
         items(pairedDevices) { device ->
             Text(
