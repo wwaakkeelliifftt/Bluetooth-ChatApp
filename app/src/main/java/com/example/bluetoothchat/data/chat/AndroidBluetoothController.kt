@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.os.Build
 import com.example.bluetoothchat.domain.chat.BluetoothController
 import com.example.bluetoothchat.domain.chat.BluetoothDeviceDomain
 import com.example.bluetoothchat.domain.chat.BluetoothMessage
@@ -93,9 +94,9 @@ class AndroidBluetoothController(
     }
 
     override fun startDiscovery() {
-        if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
-            return
-        }
+//        if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
+//            return
+//        }
         context.registerReceiver(
             foundDeviceReceiver,
             IntentFilter(BluetoothDevice.ACTION_FOUND)
@@ -131,21 +132,23 @@ class AndroidBluetoothController(
                     shouldLoop = false
                     null
                 }
+
+                emit(ConnectionResult.ConnectionEstablished)
+
+                currentClientSocket?.let { btSocket ->
+                    currentServerSocket?.close()
+                    /**    server_socket need only for start/accept connection, after
+                     *     client_socket will keep connect between devices       */
+
+                    val service = BluetoothDataTransferService(btSocket)
+                    dataTransferService = service
+
+                    emitAll(service.listenForIncomingMessages().map {
+                        ConnectionResult.TransferSucceeded(message = it)
+                    })
+                }
             }
 
-            emit(ConnectionResult.ConnectionEstablished)
-
-            currentClientSocket?.let { btSocket ->
-                currentServerSocket?.close()
-                /**    server_socket need only for start/accept connection, after
-                 *     client_socket will keep connect between devices       */
-
-                val service = BluetoothDataTransferService(btSocket)
-                dataTransferService = service
-                emitAll(service.listenForIncomingMessages().map {
-                    ConnectionResult.TransferSucceeded(message = it)
-                })
-            }
         }.onCompletion { closeConnection() }
             .flowOn(Dispatchers.IO)
     }
@@ -155,8 +158,12 @@ class AndroidBluetoothController(
             throw SecurityException("No BLUETOOTH_CONNECT permission")
         }
 
-        val bluetoothDevice = bluetoothAdapter?.getRemoteDevice(device.macAddress)
-        currentClientSocket = bluetoothDevice
+//        val bluetoothDevice = bluetoothAdapter?.getRemoteDevice(device.macAddress)
+//        currentClientSocket = bluetoothDevice
+//            ?.createRfcommSocketToServiceRecord(UUID.fromString(BT_SERVICE_UUID))
+
+        currentClientSocket = bluetoothAdapter
+            ?.getRemoteDevice(device.macAddress)
             ?.createRfcommSocketToServiceRecord(UUID.fromString(BT_SERVICE_UUID))
 
         stopDiscovery()                                      //  don't need observe other bt-devices
@@ -168,9 +175,10 @@ class AndroidBluetoothController(
 
                 BluetoothDataTransferService(socket = socket).also { btDTS ->
                     dataTransferService = btDTS
-                    emitAll(btDTS.listenForIncomingMessages().map { btMessage ->
-                        ConnectionResult.TransferSucceeded(btMessage)
-                    })
+                    emitAll(
+                        btDTS.listenForIncomingMessages().map { btMessage ->
+                            ConnectionResult.TransferSucceeded(btMessage) }
+                    )
                 }
             } catch (e: IOException) {
                 socket.close()
@@ -221,6 +229,9 @@ class AndroidBluetoothController(
     }
 
     private fun hasPermission(permission: String): Boolean {
-        return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+        } else
+            true                   //  API 29 case, where bluetooth permissions granted as default
     }
 }

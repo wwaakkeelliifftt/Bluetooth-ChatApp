@@ -4,8 +4,10 @@ import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.bluetoothchat.presentation.components.ChatScreen
@@ -60,6 +63,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             permissionLauncher.launch(
                 arrayOf(
@@ -67,7 +71,15 @@ class MainActivity : ComponentActivity() {
                     Manifest.permission.BLUETOOTH_CONNECT
                 )
             )
-        } /* sdk<=30 has own .BLUETOOTH permission as "normal", and work without request */
+        } else
+            /** sdk<=30 has own .BLUETOOTH permission as "normal", and work without request
+            but need permission and activate GPS */
+        {
+            if (applicationContext.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 0)
+            }
+        }
 
         setContent {
             BluetoothChatTheme {
